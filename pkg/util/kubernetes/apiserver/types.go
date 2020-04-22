@@ -33,6 +33,10 @@ const (
 	hpaInformer       InformerName = "hpa"
 	servicesInformer  InformerName = "services"
 	secretsInformer   InformerName = "secrets"
-	// TODO: make it private
+	// PodsInformer name, TODO: make private
 	PodsInformer InformerName = "pods"
+	// DeploysInformer name, TODO: make private
+	DeploysInformer InformerName = "deploys"
+	// ReplicasetsInformer name, TODO: make it private
+	ReplicasetsInformer InformerName = "replicasets"
 )
