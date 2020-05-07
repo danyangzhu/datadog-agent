@@ -123,6 +123,7 @@ require (
 	github.com/mdlayher/netlink v1.1.0
 	github.com/mholt/archiver v0.0.0-00010101000000-000000000000
 	github.com/miekg/dns v1.0.14
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852 // indirect
