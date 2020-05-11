@@ -16,29 +16,42 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission/mutate"
 	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/certificate"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	admiv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/kubernetes"
 )
 
 const jsonContentType = "application/json"
 
 // RunServer creates and start a k8s admission webhook server
-func RunServer(mainCtx context.Context) error {
+func RunServer(mainCtx context.Context, client kubernetes.Interface) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/mutate", mutateHandler)
+	mux.HandleFunc(config.Datadog.GetString("admission_controller.inject_config.endpoint"), func(w http.ResponseWriter, r *http.Request) {
+		mutateHandler(w, r, mutate.InjectConfig)
+	})
+	mux.HandleFunc(config.Datadog.GetString("admission_controller.inject_tags.endpoint"), func(w http.ResponseWriter, r *http.Request) {
+		mutateHandler(w, r, mutate.InjectTags)
+	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Datadog.GetInt("admission_controller.port")),
 		Handler: mux,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				// TODO: implement me
-				return &tls.Certificate{}, nil
+				secretNs := common.GetResourcesNamespace()
+				secretName := config.Datadog.GetString("admission_controller.certificate.secret_name")
+				cert, err := certificate.GetCertificateFromSecret(secretNs, secretName, client)
+				if err != nil {
+					log.Errorf("Couldn't fetch certificate: %v", err)
+				}
+				return cert, nil
 			},
 		},
 	}
@@ -53,7 +66,7 @@ func RunServer(mainCtx context.Context) error {
 	return server.Shutdown(shutdownCtx)
 }
 
-func mutateHandler(w http.ResponseWriter, r *http.Request) {
+func mutateHandler(w http.ResponseWriter, r *http.Request, mutateFunc func(*admiv1beta1.AdmissionRequest) (*admiv1beta1.AdmissionResponse, error)) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		log.Warnf("Invalid method %s, only POST requests are allowed", r.Method)
@@ -87,7 +100,7 @@ func mutateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var admissionReviewResp admiv1beta1.AdmissionReview
-	resp, err := admission.Mutate(admissionReviewReq.Request)
+	resp, err := mutateFunc(admissionReviewReq.Request)
 	if err != nil {
 		log.Warnf("Failed to mutate: %v", err)
 		admissionReviewResp = admiv1beta1.AdmissionReview{

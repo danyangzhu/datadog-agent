@@ -24,12 +24,13 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"github.com/DataDog/datadog-agent/cmd/agent/common"
-	"github.com/DataDog/datadog-agent/cmd/cluster-agent/admission"
+	admissioncmd "github.com/DataDog/datadog-agent/cmd/cluster-agent/admission"
 	"github.com/DataDog/datadog-agent/cmd/cluster-agent/api"
 	"github.com/DataDog/datadog-agent/cmd/cluster-agent/custommetrics"
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
 	"github.com/DataDog/datadog-agent/pkg/api/healthprobe"
 	"github.com/DataDog/datadog-agent/pkg/clusteragent"
+	admissionpkg "github.com/DataDog/datadog-agent/pkg/clusteragent/admission"
 	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks"
 	"github.com/DataDog/datadog-agent/pkg/clusteragent/orchestrator"
 	"github.com/DataDog/datadog-agent/pkg/config"
@@ -230,6 +231,17 @@ func start(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Errorf("Could not start orchestrator controller: %v", err)
 		}
+
+		admissionCtx := admissionpkg.ControllerContext{
+			IsLeaderFunc: le.IsLeader,
+			Informers:    apiCl.InformerFactory,
+			Client:       apiCl.Cl,
+			StopCh:       stopCh,
+		}
+		err = admissionpkg.StartControllers(admissionCtx)
+		if err != nil {
+			log.Errorf("Could not start admission controller: %v", err)
+		}
 	}
 
 	// Setup a channel to catch OS signals
@@ -284,7 +296,7 @@ func start(cmd *cobra.Command, args []string) error {
 		go func() {
 			defer wg.Done()
 
-			errServ := admission.RunServer(mainCtx)
+			errServ := admissioncmd.RunServer(mainCtx, apiCl.Cl)
 			if errServ != nil {
 				log.Errorf("Error in the Admission Controller Webhook Server: %v", errServ)
 			}
