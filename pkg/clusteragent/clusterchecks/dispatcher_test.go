@@ -460,6 +460,7 @@ func TestPatchConfiguration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, rawConfig["tags"], "foo:bar")
 	assert.Contains(t, rawConfig["tags"], "cluster_name:testing")
+	assert.Contains(t, rawConfig["tags"], "kube_cluster_name:testing")
 	assert.Equal(t, true, rawConfig["empty_default_hostname"])
 }
 
@@ -490,6 +491,7 @@ func TestPatchEndpointsConfiguration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, rawConfig["tags"], "foo:bar")
 	assert.Contains(t, rawConfig["tags"], "cluster_name:testing")
+	assert.Contains(t, rawConfig["tags"], "kube_cluster_name:testing")
 	assert.Equal(t, nil, rawConfig["empty_default_hostname"])
 }
 

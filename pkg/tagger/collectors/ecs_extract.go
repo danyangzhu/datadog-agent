@@ -34,6 +34,7 @@ func (c *ECSCollector) parseTasks(tasks []v1.Task, targetDockerID string, contai
 
 				if c.clusterName != "" {
 					tags.AddLow("cluster_name", c.clusterName)
+					tags.AddLow("ecs_cluster_name", c.clusterName)
 				}
 
 				for _, fn := range containerHandlers {

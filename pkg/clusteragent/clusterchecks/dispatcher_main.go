@@ -42,8 +42,11 @@ func newDispatcher() *dispatcher {
 
 	clusterTagValue := clustername.GetClusterName()
 	clusterTagName := config.Datadog.GetString("cluster_checks.cluster_tag_name")
-	if clusterTagName != "" && clusterTagValue != "" {
-		d.extraTags = append(d.extraTags, fmt.Sprintf("%s:%s", clusterTagName, clusterTagValue))
+	if clusterTagValue != "" {
+		if clusterTagName != "" {
+			d.extraTags = append(d.extraTags, fmt.Sprintf("%s:%s", clusterTagName, clusterTagValue))
+		}
+		d.extraTags = append(d.extraTags, fmt.Sprintf("kube_cluster_name:%s", clusterTagValue))
 	}
 
 	d.advancedDispatching = config.Datadog.GetBool("cluster_checks.advanced_dispatching_enabled")

@@ -69,7 +69,7 @@ func getHostTags() *tags {
 
 	clusterName := clustername.GetClusterName()
 	if len(clusterName) != 0 {
-		hostTags = appendToHostTags(hostTags, []string{"cluster_name:" + clusterName})
+		hostTags = appendToHostTags(hostTags, []string{"cluster_name:" + clusterName, "kube_cluster_name:" + clusterName})
 	}
 
 	k8sTags, err := k8s.GetTags()

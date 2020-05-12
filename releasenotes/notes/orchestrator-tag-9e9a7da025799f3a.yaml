@@ -1,0 +1,4 @@
+---
+enhancements:
+  - |
+    Introduce `kube_cluster_name` and `ecs_cluster_name` tags in addition to `cluster_name`.
